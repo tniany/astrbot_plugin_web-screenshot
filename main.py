@@ -6,15 +6,9 @@ from typing import AsyncGenerator, Any
 from urllib.parse import urlparse
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api.event import filter
-from astrbot.api.star import Star, register
+from astrbot.api.star import Star
 from astrbot.api import logger
 
-@register(
-    "astrbot_plugin_web-screenshot",
-    "浅月tniay",
-    "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人",
-    "v1.3.1"
-)
 class WebScreenshotPlugin(Star):
     """API网页截图插件
     
@@ -121,7 +115,7 @@ class WebScreenshotPlugin(Star):
             params: 请求参数
             
         Returns:
-            httpx.Response: 响应对象
+            httpx.Response: 响应对象（流式）
             
         Raises:
             httpx.HTTPError: HTTP请求错误
@@ -132,7 +126,8 @@ class WebScreenshotPlugin(Star):
         while retry_count <= self.RETRY_COUNT:
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
-                    response = await client.get(self.api_url, params=params)
+                    # 使用流式请求，避免完整读入内存
+                    response = await client.get(self.api_url, params=params, stream=True)
                     logger.debug(f"获取截图响应状态码: {response.status_code}")
                     response.raise_for_status()
                     logger.info(f"获取网页截图成功: {params['url']}")
@@ -194,19 +189,29 @@ class WebScreenshotPlugin(Star):
             total_size = 0
             
             # 创建临时文件，设置更安全的权限
-            with tempfile.NamedTemporaryFile(
-                suffix=f".{file_ext}", 
-                delete=False,
-                mode='wb'
-            ) as f:
-                # 使用流式下载
-                async for chunk in response.aiter_bytes(chunk_size=self.CHUNK_SIZE):
-                    total_size += len(chunk)
-                    if total_size > self.MAX_FILE_SIZE:
-                        logger.warning(f"截图文件过大: {total_size} bytes, 超过限制: {self.MAX_FILE_SIZE} bytes")
-                        return None
-                    f.write(chunk)
-                temp_file = f.name
+            temp_file = None
+            try:
+                with tempfile.NamedTemporaryFile(
+                    suffix=f".{file_ext}", 
+                    delete=False,
+                    mode='wb'
+                ) as f:
+                    temp_file = f.name
+                    # 使用流式下载
+                    async for chunk in response.aiter_bytes(chunk_size=self.CHUNK_SIZE):
+                        total_size += len(chunk)
+                        if total_size > self.MAX_FILE_SIZE:
+                            logger.warning(f"截图文件过大: {total_size} bytes, 超过限制: {self.MAX_FILE_SIZE} bytes")
+                            # 文件超限，清理临时文件后返回
+                            if temp_file and os.path.exists(temp_file):
+                                self._cleanup_temp_file(temp_file)
+                            return None
+                        f.write(chunk)
+            except Exception as e:
+                logger.error(f"保存截图到临时文件失败: {str(e)}")
+                if temp_file and os.path.exists(temp_file):
+                    self._cleanup_temp_file(temp_file)
+                return None
             
             # 验证文件存在且有内容
             if not temp_file:
@@ -323,11 +328,17 @@ class WebScreenshotPlugin(Star):
                     continue
                 
                 # 检查值是否包含恶意字符
-                dangerous_chars = [';', '|', '&', '`', '\\', '\'', '"', '<', '>']
+                dangerous_chars = [';', '|', '`', '\\', '\'', '"', '<', '>']
+                has_dangerous_char = False
                 for char in dangerous_chars:
                     if char in value:
                         errors.append(f"参数值包含无效字符: {key}")
-                        continue
+                        has_dangerous_char = True
+                        break
+                
+                # 如果包含危险字符，跳过该参数
+                if has_dangerous_char:
+                    continue
                 
                 if key == "format":
                     if value in ["png", "webp"]:
@@ -386,7 +397,7 @@ class WebScreenshotPlugin(Star):
             return False
         
         # 检查URL是否包含恶意字符
-        dangerous_chars = [';', '|', '&', '`', '\\', '\'', '"', '<', '>']
+        dangerous_chars = [';', '|', '`', '\\', '\'', '"', '<', '>']
         for char in dangerous_chars:
             if char in url:
                 return False
@@ -403,7 +414,14 @@ class WebScreenshotPlugin(Star):
             return False
         
         # 安全检查：阻止localhost和内部网络地址
-        host = parsed.netloc.split(':')[0]  # 移除端口号
+        host = parsed.hostname
+        if not host:
+            return False
+        
+        # 标准化主机名（小写、移除末尾点）
+        host = host.lower()
+        if host.endswith('.'):
+            host = host[:-1]
         
         # 阻止localhost
         if host in {"localhost", "127.0.0.1", "::1"}:
@@ -412,7 +430,12 @@ class WebScreenshotPlugin(Star):
         # 阻止内部网络地址
         import ipaddress
         try:
-            ip = ipaddress.ip_address(host)
+            # 对于IPv6地址，移除中括号
+            if host.startswith('[') and host.endswith(']'):
+                host_ip = host[1:-1]
+            else:
+                host_ip = host
+            ip = ipaddress.ip_address(host_ip)
             if ip.is_private or ip.is_loopback or ip.is_link_local:
                 return False
         except ValueError:
