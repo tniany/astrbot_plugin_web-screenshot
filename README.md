@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" width="120" height="120" alt="Web Screenshot">
+  <img src="[logo.png](https://youke.xn--y7xa690gmna.cn/s1/2026/02/24/699ca6d405401.webp)" width="120" height="120" alt="Web Screenshot">
   
   <h1>Web Screenshot 插件</h1>
   
@@ -141,3 +141,4 @@
 <div align="center">
   <p>如果这个插件对你有帮助，请给它一个 ⭐️ 吧！</p>
 </div>
+
