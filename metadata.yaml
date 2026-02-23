@@ -1,6 +1,6 @@
 name: astrbot_plugin_web-screenshot # 插件唯一识别名
 display_name: API网页截图😝 # 用于展示的名字
-desc: "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人
+desc: "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人"
 version: v1.2.2.1 # 插件版本号
 author: 浅月tniay # 作者
 repo: https://github.com/tniany/astrbot_plugin_web-screenshot # 插件的仓库地址
