@@ -1,0 +1,28 @@
+{
+  "default_format": {
+    "description": "默认图片格式",
+    "type": "string",
+    "default": "png",
+    "options": ["png", "webp"],
+    "hint": "选择默认的图片格式"
+  },
+  "default_width": {
+    "description": "默认视窗宽度",
+    "type": "int",
+    "default": 1920,
+    "hint": "设置默认的视窗宽度，范围100-3840"
+  },
+  "default_height": {
+    "description": "默认视窗高度",
+    "type": "int",
+    "default": 1080,
+    "hint": "设置默认的视窗高度，范围100-2160"
+  },
+  "default_send_method": {
+    "description": "默认消息发送方式",
+    "type": "string",
+    "default": "single",
+    "options": ["chain", "single"],
+    "hint": "选择默认的消息发送方式：chain（合并消息）或 single（单条消息）"
+  }
+}

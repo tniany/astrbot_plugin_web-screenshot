@@ -1,0 +1,7 @@
+name: astrbot_plugin_web-screenshot # 插件唯一识别名
+display_name: API网页截图😝 # 用于展示的名字
+desc: 内置外部API提供网页截图功能，无需配置直接上手,使用/截图 命令即可截图  # 插件简短描述
+version: v1.1.0 # 插件版本号
+author: 浅月tniay # 作者
+repo: # 插件的仓库地址
+support_platforms: OneBot
