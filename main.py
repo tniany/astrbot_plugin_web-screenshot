@@ -38,6 +38,10 @@ class WebScreenshotPlugin(Star):
         # 解析参数
         params = self._parse_params(args)
         
+        # 输出详细日志用于调试
+        debug_info = f"URL验证调试：\n原始输入: {args}\n解析后的URL: {params['url']}\n包含点号: {'.' in params['url']}\n包含协议: {params['url'].startswith('http://') or params['url'].startswith('https://')}\nURL长度: {len(params['url'])}"
+        yield event.plain_result(debug_info)
+        
         # 验证URL
         if not self._validate_url(params["url"]):
             yield event.plain_result("请提供有效的网站URL")
