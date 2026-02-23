@@ -90,8 +90,10 @@ class WebScreenshotPlugin(Star):
                     except ValueError:
                         pass
             elif not url_found:
-                # 处理URL，自动添加协议前缀
+                # 处理URL，移除特殊字符并自动添加协议前缀
                 url_candidate = part
+                # 移除常见的特殊字符，如反引号、引号等
+                url_candidate = url_candidate.strip('`'"'"'<>[](){}')
                 if not url_candidate.startswith("http://") and not url_candidate.startswith("https://"):
                     # 为没有协议前缀的URL添加http://
                     url_candidate = "http://" + url_candidate
