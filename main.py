@@ -17,8 +17,8 @@ class WebScreenshotPlugin(Star):
         """
         super().__init__(context)
         self.api_url = "https://screenshotsnap.com/api/screenshot"
-        # 添加URL验证正则表达式
-        self.url_pattern = re.compile(r'^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$')
+        # 简化URL验证，只检查基本格式
+        self.url_pattern = re.compile(r'^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/.*)?$', re.IGNORECASE)
     
     @command("截图", aliases=["网页截图", "截图网页"])
     async def handle_screenshot(self, event: AstrMessageEvent) -> None:
@@ -118,8 +118,13 @@ class WebScreenshotPlugin(Star):
         if len(url) > 2048:
             return False
         
-        # 使用正则表达式验证URL格式
-        if not self.url_pattern.match(url):
+        # 简化URL验证，只检查是否包含点号（域名）
+        # 这样可以接受更多有效的URL格式
+        if '.' not in url:
+            return False
+        
+        # 检查是否包含协议前缀
+        if not url.startswith('http://') and not url.startswith('https://'):
             return False
         
         return True
@@ -170,7 +175,7 @@ class WebScreenshotPlugin(Star):
     "astrbot_plugin_web-screenshot",
     "浅月tniay",
     "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人",
-    "v1.2.2.1"
+    "v1.3.0"
 )
 def plugin_main(context):
     """插件入口函数
