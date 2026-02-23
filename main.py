@@ -1,14 +1,24 @@
 import httpx
-import asyncio
-from typing import Dict, Any, Optional
+import tempfile
+import os
+import re
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api.event.filter import command
 from astrbot.api.star import Star, register
 
 class WebScreenshotPlugin(Star):
+    """API网页截图插件"""
+    
     def __init__(self, context):
+        """初始化插件
+        
+        Args:
+            context: AstrBot上下文对象
+        """
         super().__init__(context)
         self.api_url = "https://screenshotsnap.com/api/screenshot"
+        # 添加URL验证正则表达式
+        self.url_pattern = re.compile(r'^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$')
     
     @command("截图", aliases=["网页截图", "截图网页"])
     async def handle_screenshot(self, event: AstrMessageEvent) -> None:
@@ -26,6 +36,30 @@ class WebScreenshotPlugin(Star):
             return
         
         # 解析参数
+        params = self._parse_params(args)
+        
+        # 验证URL
+        if not self._validate_url(params["url"]):
+            yield event.plain_result("请提供有效的网站URL")
+            return
+        
+        try:
+            # 发送请求获取截图
+            await self._fetch_and_send_screenshot(event, params)
+        except httpx.HTTPError as e:
+            yield event.plain_result(f"获取截图失败：网络错误 - {str(e)}")
+        except Exception as e:
+            yield event.plain_result(f"获取截图失败：{str(e)}")
+    
+    def _parse_params(self, args: str) -> dict:
+        """解析命令参数
+        
+        Args:
+            args: 命令参数字符串
+            
+        Returns:
+            dict: 解析后的参数
+        """
         params = {
             "url": None,
             "format": "png",
@@ -33,7 +67,6 @@ class WebScreenshotPlugin(Star):
             "height": 1080
         }
         
-        # 提取URL和其他参数
         parts = args.split()
         url_found = False
         
@@ -57,58 +90,93 @@ class WebScreenshotPlugin(Star):
                     except ValueError:
                         pass
             elif not url_found:
-                params["url"] = part
+                # 处理URL，自动添加协议前缀
+                url_candidate = part
+                if not url_candidate.startswith("http://") and not url_candidate.startswith("https://"):
+                    # 为没有协议前缀的URL添加http://
+                    url_candidate = "http://" + url_candidate
+                params["url"] = url_candidate
                 url_found = True
         
-        if not params["url"]:
-            yield event.plain_result("请提供要截图的网站URL")
-            return
+        return params
+    
+    def _validate_url(self, url: str) -> bool:
+        """验证URL的有效性
         
-        # 构建API请求URL
-        api_params = {
-            "url": params["url"],
-            "format": params["format"],
-            "width": params["width"],
-            "height": params["height"]
-        }
+        Args:
+            url: 要验证的URL
+            
+        Returns:
+            bool: URL是否有效
+        """
+        if not url:
+            return False
         
-        try:
-            # 发送请求获取截图
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                yield event.plain_result("正在获取网页截图，请稍候...")
-                response = await client.get(self.api_url, params=api_params)
-                response.raise_for_status()
+        # 检查URL长度
+        if len(url) > 2048:
+            return False
+        
+        # 使用正则表达式验证URL格式
+        if not self.url_pattern.match(url):
+            return False
+        
+        return True
+    
+    async def _fetch_and_send_screenshot(self, event: AstrMessageEvent, params: dict) -> None:
+        """获取并发送截图
+        
+        Args:
+            event: 消息事件对象
+            params: 包含所有参数的字典
+        """
+        yield event.plain_result("正在获取网页截图，请稍候...")
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(self.api_url, params=params)
+            response.raise_for_status()
+            
+            # 检查响应是否为图片
+            if response.headers.get("content-type", "").startswith("image/"):
+                # 保存图片到临时文件
+                file_ext = params["format"]
+                temp_file = None
                 
-                # 检查响应是否为图片
-                if response.headers.get("content-type", "").startswith("image/"):
-                    # 保存图片到临时文件
-                    import tempfile
-                    import os
-                    
-                    file_ext = params["format"]
+                try:
                     with tempfile.NamedTemporaryFile(suffix=f".{file_ext}", delete=False) as f:
                         f.write(response.content)
                         temp_file = f.name
                     
-                    try:
-                        # 发送图片
-                        yield event.image_result(temp_file)
-                        yield event.plain_result(
-                            f"网页截图成功！\nURL: {params['url']}\n格式: {params['format']}\n尺寸: {params['width']}x{params['height']}\n\n"
-                        )
-                    finally:
-                        # 清理临时文件
-                        if os.path.exists(temp_file):
+                    # 发送图片
+                    yield event.image_result(temp_file)
+                    yield event.plain_result(
+                        f"网页截图成功！\nURL: {params['url']}\n格式: {params['format']}\n尺寸: {params['width']}x{params['height']}\n\n"
+                    )
+                except Exception as e:
+                    yield event.plain_result(f"发送图片失败：{str(e)}")
+                finally:
+                    # 清理临时文件
+                    if temp_file and os.path.exists(temp_file):
+                        try:
                             os.unlink(temp_file)
-                else:
-                    yield event.plain_result("获取截图失败：返回内容不是图片")
-        
-        except httpx.HTTPError as e:
-            yield event.plain_result(f"获取截图失败：网络错误 - {str(e)}")
-        except Exception as e:
-            yield event.plain_result(f"获取截图失败：{str(e)}")
+                        except:
+                            pass
+            else:
+                yield event.plain_result("获取截图失败：返回内容不是图片")
 
 # 插件入口
-@register("astrbot_plugin_web-screenshot", "浅月tniay", "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人", "v1.2.2.1")
+@register(
+    "astrbot_plugin_web-screenshot",
+    "浅月tniay",
+    "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人",
+    "v1.2.2.1"
+)
 def plugin_main(context):
+    """插件入口函数
+    
+    Args:
+        context: AstrBot上下文对象
+        
+    Returns:
+        WebScreenshotPlugin: 插件实例
+    """
     return WebScreenshotPlugin(context)

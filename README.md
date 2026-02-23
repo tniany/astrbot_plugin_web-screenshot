@@ -1,167 +1,146 @@
-<div align="center">
-  <img src="logo.png" width="120" height="120" alt="Web Screenshot">
-  
-  <h1>Web Screenshot 插件</h1>
-  
-  <p>
-    <a href="https://github.com/tniany/astrbot_plugin_web-screenshot">
-      <img src="https://img.shields.io/github/stars/tniany/astrbot_plugin_web-screenshot.svg?style=social" alt="GitHub Stars">
-    </a>
-    <a href="https://github.com/tniany/astrbot_plugin_web-screenshot">
-      <img src="https://img.shields.io/github/forks/tniany/astrbot_plugin_web-screenshot.svg?style=social" alt="GitHub Forks">
-    </a>
-    <a href="https://github.com/tniany/astrbot_plugin_web-screenshot/blob/master/LICENSE">
-      <img src="https://img.shields.io/github/license/tniany/astrbot_plugin_web-screenshot.svg" alt="License">
-    </a>
-  </p>
-  
-  <p>
-    <strong>基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人</strong>
-  </p>
-  
-  <p>
-    <a href="#-功能特性">功能特性</a> •
-    <a href="#-安装方法">安装方法</a> •
-    <a href="#-插件配置">插件配置</a> •
-    <a href="#-使用方法">使用方法</a> •
-    <a href="#-示例">示例</a> •
-    <a href="#-技术实现">技术实现</a>
-  </p>
-</div>
+# API网页截图插件
 
-## 📋 功能特性
+![GitHub release](https://img.shields.io/github/v/release/tniany/astrbot_plugin_web-screenshot)
+![GitHub stars](https://img.shields.io/github/stars/tniany/astrbot_plugin_web-screenshot)
+![GitHub forks](https://img.shields.io/github/forks/tniany/astrbot_plugin_web-screenshot)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![License](https://img.shields.io/github/license/tniany/astrbot_plugin_web-screenshot)
 
-- ✅ 提供网页截图功能
-- ✅ 支持自定义图片格式（png, webp）
-- ✅ 支持自定义视窗尺寸
-- ✅ 支持切换消息发送方式（合并消息/单条消息）
-- ✅ 支持白名单管理，只有白名单用户可以使用截图功能
-- ✅ 管理员默认拥有截图权限
-- ✅ 支持配置非白名单用户是否回复
-- ✅ 通过管理面板进行配置
-- ✅ 友好的错误提示
+基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人
 
-## 🚀 安装方法
+## 🚀 功能介绍
 
-1. **将插件文件夹复制到AstrBot的插件目录**
-2. **安装依赖**：
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **重启AstrBot**，插件会自动加载
+- 📸 支持网页截图功能
+- 🎨 支持自定义图片格式（png/webp）
+- 📏 支持自定义视窗尺寸
+- ⚡ 基于ScreenshotSnap API，响应速度快
+- 📱 适用于OneBot QQ机器人平台
+- 🔧 简单易用的命令行接口
+- 📦 轻量级设计，无额外依赖
 
-## ⚙️ 插件配置
+## 📥 安装方法
 
-本插件支持通过AstrBot管理面板进行配置，配置项包括：
+### 方法一：通过AstrBot插件市场安装
+1. 打开AstrBot管理面板
+2. 进入插件市场
+3. 搜索"API网页截图"
+4. 点击安装按钮
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|-------|------|-------|------|
-| default_format | string | png | 默认图片格式，可选值：png, webp |
-| default_width | int | 1920 | 默认视窗宽度，范围100-3840 |
-| default_height | int | 1080 | 默认视窗高度，范围100-2160 |
-| default_send_method | string | single | 默认消息发送方式，可选值：chain（合并消息）, single（单条消息） |
-| whitelist | list | [] | 白名单，添加可以使用截图功能的用户QQ号 |
-| reply_non_whitelist | bool | true | 非白名单是否回复，设置是否回复非白名单用户的截图请求 |
-
-配置文件路径：`_conf_schema.json`
+### 方法二：手动安装
+1. 下载本插件的zip包
+2. 解压到AstrBot的`data/plugins`目录
+3. 重启AstrBot
 
 ## 📖 使用方法
 
-### 1. 截图指令
-
-#### 基础用法
-```
+### 基础用法
+```bash
 /截图 <url>
 ```
 
-#### 自定义格式和尺寸
+**示例：**
+```bash
+/截图 https://www.baidu.com
 ```
+
+### 自定义格式和尺寸
+```bash
 /截图 <url> format=<format> width=<width> height=<height>
 ```
 
-**参数说明**：
+**参数说明：**
 - `url`：要截图的网站URL（必需）
 - `format`：图片格式，支持png（默认）和webp
 - `width`：视窗宽度，范围100-3840（默认1920）
 - `height`：视窗高度，范围100-2160（默认1080）
 
-### 2. 发送方式切换
-
-```
-/发送 合并    # 切换为合并消息
-/发送 单条    # 切换为单条消息
-/发送         # 查看当前发送方式
+**示例：**
+```bash
+/截图 https://www.google.com format=webp width=1280 height=720
 ```
 
-### 3. 白名单管理（仅管理员可用）
-
-```
-/jtwl <qq号>    # 添加用户到白名单
-/jtwl           # 查看当前白名单
-```
-
-## 🎯 示例
-
-### 示例1：基础截图
-```
-/截图 baidu.com
-```
-
-### 示例2：带协议前缀的URL
-```
-/截图 https://www.baidu.com
-```
-
-### 示例3：自定义格式
-```
-/截图 baidu.com format=webp
-```
-
-### 示例4：自定义尺寸
-```
-/截图 baidu.com width=1280 height=720
-```
-
-### 示例5：管理白名单
-```
-/jtwl 123456789    # 添加QQ号为123456789的用户到白名单
-/jtwl              # 查看当前白名单
-```
+### 指令别名
+插件支持以下指令别名：
+- `/截图`
+- `/网页截图`
+- `/截图网页`
 
 ## 🔧 技术实现
 
-- **API调用**：使用 `https://screenshotsnap.com/api/screenshot` API 生成网页截图
-- **消息发送**：支持两种发送方式
-  - 合并消息：使用群合并转发消息发送结果
-  - 单条消息：分别发送文字提示和图片
-- **白名单管理**：支持通过配置文件和命令管理白名单
-- **权限控制**：管理员默认拥有截图权限，无需添加到白名单
-- **错误处理**：提供友好的错误提示信息
+- **API服务**：使用[ScreenshotSnap](https://screenshotsnap.com/zh)提供的免费截图API
+- **开发语言**：Python 3.10+
+- **依赖库**：httpx 0.27.0
+- **兼容平台**：OneBot QQ机器人
+- **代码结构**：模块化设计，易于维护和扩展
 
-## 📝 注意事项
+## 📁 项目结构
 
-- 本插件使用第三方API进行截图，请确保机器人能够访问互联网
-- 截图可能需要一定时间，取决于网站的加载速度
-- 建议在配置中设置合适的默认值，以获得最佳体验
-- 只有白名单用户和管理员可以使用截图功能
-- 管理员默认拥有截图权限，无需添加到白名单
-- 白名单管理命令仅管理员可用
-- 非白名单用户的请求是否回复可以在配置中设置
+```
+astrbot_plugin_web-screenshot/
+├── main.py          # 插件核心实现
+├── metadata.yaml    # 插件配置信息
+├── requirements.txt # 依赖项声明
+└── README.md        # 项目说明文档
+```
 
-## 🤝 贡献
+## ❓ 常见问题
 
-欢迎提交Issue和Pull Request来改进这个插件！
+### 1. 截图失败怎么办？
+- 检查URL是否正确
+- 检查网络连接是否正常
+- 网站可能对截图服务有限制
+
+### 2. 截图速度慢怎么办？
+- 截图速度取决于目标网站的加载速度
+- 建议使用较小的尺寸以提高速度
+
+### 3. 支持哪些网站？
+- 支持大部分公开可访问的网站
+- 不支持需要登录的网站
+- 不支持需要验证码的网站
+
+## ⚠️ 注意事项
+
+- 本插件使用的是第三方免费API，可能存在请求限制
+- 截图内容的版权归原网站所有，请合理使用
+- 请勿滥用截图功能，避免对目标网站造成不必要的负担
+- 插件仅用于学习和研究目的，请勿用于商业用途
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+本插件采用MIT许可证开源
 
-## 👨‍💻 作者
+## 🤝 贡献
 
-**浅月tniay**
+欢迎提交Issue和Pull Request来帮助改进这个插件！
+
+1. Fork本仓库
+2. 创建你的特性分支 (`git checkout -b feature/amazing-feature`)
+3. 提交你的更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 打开一个Pull Request
+
+## 📞 作者信息
+
+- **作者**：浅月tniay
+- **GitHub**：[https://github.com/tniany/astrbot_plugin_web-screenshot](https://github.com/tniany/astrbot_plugin_web-screenshot)
+- **反馈**：如有问题或建议，请在GitHub仓库提交Issue
+
+## 📖 更新日志
+
+### v1.2.2.1
+- 修复插件导入失败问题
+- 优化消息发送方式
+- 更新API调用逻辑
+- 美化代码结构和文档
+
+## 🎯 鸣谢
+
+- [AstrBot](https://astrbot.app/) - 强大的多平台聊天机器人框架
+- [ScreenshotSnap](https://screenshotsnap.com/zh) - 免费的网站截图API服务
 
 ---
 
-<div align="center">
-  <p>如果这个插件对你有帮助，请给它一个 ⭐️ 吧！</p>
-</div>
+**使用说明：** 插件安装后，直接在QQ聊天中使用`/截图`指令即可开始使用网页截图功能。
+
+** Enjoy! 🎉 **
