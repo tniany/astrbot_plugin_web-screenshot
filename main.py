@@ -1,11 +1,11 @@
 import httpx
 import asyncio
 from typing import Dict, Any, Optional
-from astrbot.api.event import AstrMessageEvent, MessageEventResult
+from astrbot.api.event import AstrMessageEvent
 from astrbot.api.event.filter import command
-import star
+from astrbot.api.star import Star, register
 
-class WebScreenshotPlugin(star.Star):
+class WebScreenshotPlugin(Star):
     def __init__(self, context):
         super().__init__(context)
         self.api_url = "https://screenshotsnap.com/api/screenshot"
@@ -22,7 +22,7 @@ class WebScreenshotPlugin(star.Star):
         """
         args = event.get_message_str().strip()
         if not args:
-            event.set_result(MessageEventResult().message("请提供要截图的网站URL"))
+            yield event.plain_result("请提供要截图的网站URL")
             return
         
         # 解析参数
@@ -61,7 +61,7 @@ class WebScreenshotPlugin(star.Star):
                 url_found = True
         
         if not params["url"]:
-            event.set_result(MessageEventResult().message("请提供要截图的网站URL"))
+            yield event.plain_result("请提供要截图的网站URL")
             return
         
         # 构建API请求URL
@@ -75,7 +75,7 @@ class WebScreenshotPlugin(star.Star):
         try:
             # 发送请求获取截图
             async with httpx.AsyncClient(timeout=30.0) as client:
-                event.set_result(MessageEventResult().message("正在获取网页截图，请稍候..."))
+                yield event.plain_result("正在获取网页截图，请稍候...")
                 response = await client.get(self.api_url, params=api_params)
                 response.raise_for_status()
                 
@@ -92,21 +92,23 @@ class WebScreenshotPlugin(star.Star):
                     
                     try:
                         # 发送图片
-                        event.set_result(MessageEventResult().message(
+                        yield event.image_result(temp_file)
+                        yield event.plain_result(
                             f"网页截图成功！\nURL: {params['url']}\n格式: {params['format']}\n尺寸: {params['width']}x{params['height']}\n\n"
-                        ).file(temp_file))
+                        )
                     finally:
                         # 清理临时文件
                         if os.path.exists(temp_file):
                             os.unlink(temp_file)
                 else:
-                    event.set_result(MessageEventResult().message("获取截图失败：返回内容不是图片"))
+                    yield event.plain_result("获取截图失败：返回内容不是图片")
         
         except httpx.HTTPError as e:
-            event.set_result(MessageEventResult().message(f"获取截图失败：网络错误 - {str(e)}"))
+            yield event.plain_result(f"获取截图失败：网络错误 - {str(e)}")
         except Exception as e:
-            event.set_result(MessageEventResult().message(f"获取截图失败：{str(e)}"))
+            yield event.plain_result(f"获取截图失败：{str(e)}")
 
 # 插件入口
+@register("astrbot_plugin_web-screenshot", "浅月tniay", "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人", "v1.2.2.1")
 def plugin_main(context):
     return WebScreenshotPlugin(context)
