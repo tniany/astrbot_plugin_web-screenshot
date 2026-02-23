@@ -1,10 +1,18 @@
 import httpx
 import tempfile
 import os
+from typing import AsyncGenerator, Any
+from urllib.parse import urlparse
 from astrbot.api.event import AstrMessageEvent
-from astrbot.api.event.filter import command
+from astrbot.api.event import filter
 from astrbot.api.star import Star, register
 
+@register(
+    "astrbot_plugin_web-screenshot",
+    "浅月tniay",
+    "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人",
+    "v1.3.1"
+)
 class WebScreenshotPlugin(Star):
     """API网页截图插件"""
     
@@ -17,8 +25,8 @@ class WebScreenshotPlugin(Star):
         super().__init__(context)
         self.api_url = "https://screenshotsnap.com/api/screenshot"
     
-    @command("截图", aliases=["网页截图", "截图网页"])
-    async def handle_screenshot(self, event: AstrMessageEvent) -> None:
+    @filter.command("截图", aliases=["网页截图", "截图网页"])
+    async def handle_screenshot(self, event: AstrMessageEvent) -> AsyncGenerator[Any, None]:
         """基于外部API提供网页截图功能
         用法：/截图 <url> [format=<format>] [width=<width>] [height=<height>]
         参数说明：
@@ -34,6 +42,11 @@ class WebScreenshotPlugin(Star):
         # 支持的命令：截图、网页截图、截图网页
         commands = ["截图", "网页截图", "截图网页"]
         args = full_message
+        
+        # 处理 / 前缀
+        if args.startswith("/"):
+            args = args[1:].strip()
+        
         for cmd in commands:
             if args.startswith(cmd):
                 args = args[len(cmd):].strip()
@@ -82,23 +95,20 @@ class WebScreenshotPlugin(Star):
                             f"网页截图成功！\nURL: {params['url']}\n格式: {params['format']}\n尺寸: {params['width']}x{params['height']}\n\n"
                         )
                     except Exception as e:
-                        yield event.plain_result(f"发送图片失败：{str(e)}")
+                        yield event.plain_result("发送图片失败，请稍后重试")
                     finally:
-                        # 延迟清理临时文件，确保发送完成
+                        # 清理临时文件
                         if temp_file and os.path.exists(temp_file):
                             try:
-                                # 短暂延迟后删除，确保图片已被读取
-                                import asyncio
-                                await asyncio.sleep(1)
                                 os.unlink(temp_file)
                             except:
                                 pass
                 else:
                     yield event.plain_result("获取截图失败：返回内容不是图片")
         except httpx.HTTPError as e:
-            yield event.plain_result(f"获取截图失败：网络错误 - {str(e)}")
+            yield event.plain_result("获取截图失败：网络连接异常，请检查网络后重试")
         except Exception as e:
-            yield event.plain_result(f"获取截图失败：{str(e)}")
+            yield event.plain_result("获取截图失败，请稍后重试")
     
     def _parse_params(self, args: str) -> dict:
         """解析命令参数
@@ -139,13 +149,11 @@ class WebScreenshotPlugin(Star):
                     except ValueError:
                         pass
             elif not url_found:
-                # 处理URL，移除特殊字符并自动添加协议前缀
+                # 处理URL，移除特殊字符但不添加协议前缀
                 url_candidate = part
                 # 移除常见的特殊字符，如反引号、引号等
-                url_candidate = url_candidate.strip('`'"'"'<>[](){}')
-                if not url_candidate.startswith("http://") and not url_candidate.startswith("https://"):
-                    # 为没有协议前缀的URL添加http://
-                    url_candidate = "http://" + url_candidate
+                url_candidate = url_candidate.strip('`'"'"'<>'"'"'[](){}')
+                # 直接使用用户输入的URL格式，不添加协议前缀
                 params["url"] = url_candidate
                 url_found = True
         
@@ -167,24 +175,28 @@ class WebScreenshotPlugin(Star):
         if len(url) > 2048:
             return False
         
-        # 简化URL验证，只检查是否包含点号（域名）
-        # 这样可以接受更多有效的URL格式
-        if '.' not in url:
-            return False
-        
         # 检查是否包含协议前缀
         if not url.startswith('http://') and not url.startswith('https://'):
+            return False
+        
+        # 使用urlparse进行更严格的校验
+        parsed = urlparse(url)
+        
+        # 检查scheme
+        if parsed.scheme not in ['http', 'https']:
+            return False
+        
+        # 检查netloc（域名或IP）
+        if not parsed.netloc:
+            return False
+        
+        # 检查域名是否包含点号（至少要有一个域名部分）
+        if '.' not in parsed.netloc:
             return False
         
         return True
 
 # 插件入口
-@register(
-    "astrbot_plugin_web-screenshot",
-    "浅月tniay",
-    "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人",
-    "v1.3.1"
-)
 def plugin_main(context):
     """插件入口函数
     
