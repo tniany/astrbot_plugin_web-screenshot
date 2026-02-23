@@ -1,0 +1,2 @@
+# astrbot_plugin_web-screenshot
+基于外部API提供网页截图功能的AstrBot插件，适用于astrbot OneBot机器人
