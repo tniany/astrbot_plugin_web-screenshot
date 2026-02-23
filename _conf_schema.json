@@ -10,19 +10,31 @@
     "description": "默认视窗宽度",
     "type": "int",
     "default": 1920,
-    "hint": "设置默认的视窗宽度，范围100-3840"
+    "hint": "设置默认的截图宽度"
   },
   "default_height": {
     "description": "默认视窗高度",
     "type": "int",
     "default": 1080,
-    "hint": "设置默认的视窗高度，范围100-2160"
+    "hint": "设置默认的截图高度"
   },
   "default_send_method": {
-    "description": "默认消息发送方式",
+    "description": "默认发送方式",
     "type": "string",
     "default": "single",
-    "options": ["chain", "single"],
-    "hint": "选择默认的消息发送方式：chain（合并消息）或 single（单条消息）"
+    "options": ["single", "chain"],
+    "hint": "选择默认的消息发送方式：single为单条消息，chain为合并消息"
+  },
+  "whitelist": {
+    "description": "白名单",
+    "type": "list",
+    "default": [],
+    "hint": "添加可以使用截图功能的用户QQ号"
+  },
+  "reply_non_whitelist": {
+    "description": "非白名单是否回复",
+    "type": "bool",
+    "default": true,
+    "hint": "设置是否回复非白名单用户的截图请求"
   }
 }
