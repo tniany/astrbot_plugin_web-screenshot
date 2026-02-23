@@ -70,17 +70,26 @@ class WebScreenshotPlugin(Star):
                             f.write(response.content)
                             temp_file = f.name
                     
+                        # 验证文件存在且有内容
+                        if not temp_file or not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0:
+                            yield event.plain_result("获取截图失败：图片文件无效")
+                            return
+                    
                         # 发送图片
-                        yield event.image_result(temp_file)
+                        image_message = event.image_result(temp_file)
+                        yield image_message
                         yield event.plain_result(
                             f"网页截图成功！\nURL: {params['url']}\n格式: {params['format']}\n尺寸: {params['width']}x{params['height']}\n\n"
                         )
                     except Exception as e:
                         yield event.plain_result(f"发送图片失败：{str(e)}")
                     finally:
-                        # 清理临时文件
+                        # 延迟清理临时文件，确保发送完成
                         if temp_file and os.path.exists(temp_file):
                             try:
+                                # 短暂延迟后删除，确保图片已被读取
+                                import asyncio
+                                await asyncio.sleep(1)
                                 os.unlink(temp_file)
                             except:
                                 pass
