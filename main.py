@@ -1,23 +1,28 @@
 import httpx
 import asyncio
 from typing import Dict, Any, Optional
-from astrbot.core import AstrBotPlugin, MessageChain, MessageSegment, CommandEvent, Bot
+from astrbot.api.event import AstrMessageEvent, MessageEventResult
+from astrbot.api.event.filter import command
+import star
 
-class WebScreenshotPlugin(AstrBotPlugin):
-    def __init__(self, bot: Bot):
-        super().__init__(bot)
+class WebScreenshotPlugin(star.Star):
+    def __init__(self, context):
+        super().__init__(context)
         self.api_url = "https://screenshotsnap.com/api/screenshot"
     
-    @AstrBotPlugin.command(
-        name="截图",
-        desc="基于外部API提供网页截图功能",
-        usage="/截图 <url> [format=<format>] [width=<width>] [height=<height>]",
-        aliases=["网页截图", "截图网页"]
-    )
-    async def handle_screenshot(self, event: CommandEvent) -> None:
-        args = event.args.strip()
+    @command("截图", aliases=["网页截图", "截图网页"])
+    async def handle_screenshot(self, event: AstrMessageEvent) -> None:
+        """基于外部API提供网页截图功能
+        用法：/截图 <url> [format=<format>] [width=<width>] [height=<height>]
+        参数说明：
+        url：要截图的网站URL（必需）
+        format：图片格式，支持png（默认）和webp
+        width：视窗宽度，范围100-3840（默认1920）
+        height：视窗高度，范围100-2160（默认1080）
+        """
+        args = event.get_message_str().strip()
         if not args:
-            await event.reply(MessageChain([MessageSegment.text("请提供要截图的网站URL")]))
+            event.set_result(MessageEventResult().message("请提供要截图的网站URL"))
             return
         
         # 解析参数
@@ -56,7 +61,7 @@ class WebScreenshotPlugin(AstrBotPlugin):
                 url_found = True
         
         if not params["url"]:
-            await event.reply(MessageChain([MessageSegment.text("请提供要截图的网站URL")]))
+            event.set_result(MessageEventResult().message("请提供要截图的网站URL"))
             return
         
         # 构建API请求URL
@@ -70,7 +75,7 @@ class WebScreenshotPlugin(AstrBotPlugin):
         try:
             # 发送请求获取截图
             async with httpx.AsyncClient(timeout=30.0) as client:
-                await event.reply(MessageChain([MessageSegment.text("正在获取网页截图，请稍候...")]))
+                event.set_result(MessageEventResult().message("正在获取网页截图，请稍候..."))
                 response = await client.get(self.api_url, params=api_params)
                 response.raise_for_status()
                 
@@ -87,22 +92,21 @@ class WebScreenshotPlugin(AstrBotPlugin):
                     
                     try:
                         # 发送图片
-                        await event.reply(MessageChain([
-                            MessageSegment.text(f"网页截图成功！\nURL: {params['url']}\n格式: {params['format']}\n尺寸: {params['width']}x{params['height']}\n\n"),
-                            MessageSegment.image(file=temp_file)
-                        ]))
+                        event.set_result(MessageEventResult().message(
+                            f"网页截图成功！\nURL: {params['url']}\n格式: {params['format']}\n尺寸: {params['width']}x{params['height']}\n\n"
+                        ).file(temp_file))
                     finally:
                         # 清理临时文件
                         if os.path.exists(temp_file):
                             os.unlink(temp_file)
                 else:
-                    await event.reply(MessageChain([MessageSegment.text("获取截图失败：返回内容不是图片")]))
+                    event.set_result(MessageEventResult().message("获取截图失败：返回内容不是图片"))
         
         except httpx.HTTPError as e:
-            await event.reply(MessageChain([MessageSegment.text(f"获取截图失败：网络错误 - {str(e)}")]))
+            event.set_result(MessageEventResult().message(f"获取截图失败：网络错误 - {str(e)}"))
         except Exception as e:
-            await event.reply(MessageChain([MessageSegment.text(f"获取截图失败：{str(e)}")]))
+            event.set_result(MessageEventResult().message(f"获取截图失败：{str(e)}"))
 
 # 插件入口
-def plugin_main(bot: Bot) -> WebScreenshotPlugin:
-    return WebScreenshotPlugin(bot)
+def plugin_main(context):
+    return WebScreenshotPlugin(context)
