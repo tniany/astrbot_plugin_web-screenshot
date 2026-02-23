@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api.event import filter
 from astrbot.api.star import Star, register
+from astrbot.api import logger
 
 @register(
     "astrbot_plugin_web-screenshot",
@@ -47,6 +48,9 @@ class WebScreenshotPlugin(Star):
         if args.startswith("/"):
             args = args[1:].strip()
         
+        # 按命令长度降序排序，确保长命令优先匹配
+        commands.sort(key=len, reverse=True)
+        
         for cmd in commands:
             if args.startswith(cmd):
                 args = args[len(cmd):].strip()
@@ -61,7 +65,7 @@ class WebScreenshotPlugin(Star):
         
         # 验证URL
         if not self._validate_url(params["url"]):
-            yield event.plain_result("请提供有效的网站URL")
+            yield event.plain_result("请提供有效的网站URL或添加http(s)前缀")
             return
         
         try:
@@ -95,19 +99,22 @@ class WebScreenshotPlugin(Star):
                             f"网页截图成功！\nURL: {params['url']}\n格式: {params['format']}\n尺寸: {params['width']}x{params['height']}\n\n"
                         )
                     except Exception as e:
+                        logger.error(f"发送图片失败: {str(e)}")
                         yield event.plain_result("发送图片失败，请稍后重试")
                     finally:
                         # 清理临时文件
                         if temp_file and os.path.exists(temp_file):
                             try:
                                 os.unlink(temp_file)
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.warning(f"清理临时文件失败: {str(e)}")
                 else:
                     yield event.plain_result("获取截图失败：返回内容不是图片")
         except httpx.HTTPError as e:
+            logger.error(f"网络连接异常: {str(e)}")
             yield event.plain_result("获取截图失败：网络连接异常，请检查网络后重试")
         except Exception as e:
+            logger.error(f"获取截图失败: {str(e)}")
             yield event.plain_result("获取截图失败，请稍后重试")
     
     def _parse_params(self, args: str) -> dict:
@@ -159,7 +166,7 @@ class WebScreenshotPlugin(Star):
         
         return params
     
-    def _validate_url(self, url: str) -> bool:
+    def _validate_url(self, url: str | None) -> bool:
         """验证URL的有效性
         
         Args:
@@ -175,8 +182,17 @@ class WebScreenshotPlugin(Star):
         if len(url) > 2048:
             return False
         
-        # 简化验证，只要URL不为空且长度合理即可
-        # 这样可以接受没有协议前缀的URL，如 baidu.com
+        # 使用urlparse验证URL结构
+        parsed = urlparse(url)
+        
+        # 检查scheme是否为http或https
+        if parsed.scheme not in {"http", "https"}:
+            return False
+        
+        # 检查netloc是否非空（确保有主机名）
+        if not parsed.netloc:
+            return False
+        
         return True
 
 # 插件入口
