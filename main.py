@@ -30,7 +30,18 @@ class WebScreenshotPlugin(Star):
         width：视窗宽度，范围100-3840（默认1920）
         height：视窗高度，范围100-2160（默认1080）
         """
-        args = event.get_message_str().strip()
+        # 获取消息内容并移除命令部分
+        full_message = event.get_message_str().strip()
+        
+        # 移除命令部分，只保留参数
+        # 支持的命令：截图、网页截图、截图网页
+        commands = ["截图", "网页截图", "截图网页"]
+        args = full_message
+        for cmd in commands:
+            if args.startswith(cmd):
+                args = args[len(cmd):].strip()
+                break
+        
         if not args:
             yield event.plain_result("请提供要截图的网站URL")
             return
@@ -39,7 +50,7 @@ class WebScreenshotPlugin(Star):
         params = self._parse_params(args)
         
         # 输出详细日志用于调试
-        debug_info = f"URL验证调试：\n原始输入: {args}\n解析后的URL: {params['url']}\n包含点号: {'.' in params['url']}\n包含协议: {params['url'].startswith('http://') or params['url'].startswith('https://')}\nURL长度: {len(params['url'])}"
+        debug_info = f"URL验证调试：\n原始消息: {full_message}\n命令参数: {args}\n解析后的URL: {params['url']}\n包含点号: {'.' in params['url']}\n包含协议: {params['url'].startswith('http://') or params['url'].startswith('https://')}\nURL长度: {len(params['url'])}"
         yield event.plain_result(debug_info)
         
         # 验证URL
