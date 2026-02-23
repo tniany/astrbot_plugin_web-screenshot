@@ -175,25 +175,8 @@ class WebScreenshotPlugin(Star):
         if len(url) > 2048:
             return False
         
-        # 检查是否包含协议前缀
-        if not url.startswith('http://') and not url.startswith('https://'):
-            return False
-        
-        # 使用urlparse进行更严格的校验
-        parsed = urlparse(url)
-        
-        # 检查scheme
-        if parsed.scheme not in ['http', 'https']:
-            return False
-        
-        # 检查netloc（域名或IP）
-        if not parsed.netloc:
-            return False
-        
-        # 检查域名是否包含点号（至少要有一个域名部分）
-        if '.' not in parsed.netloc:
-            return False
-        
+        # 简化验证，只要URL不为空且长度合理即可
+        # 这样可以接受没有协议前缀的URL，如 baidu.com
         return True
 
 # 插件入口
