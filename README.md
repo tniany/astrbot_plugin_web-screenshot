@@ -113,13 +113,6 @@ astrbot_plugin_web-screenshot/
 ## 🤝 贡献
 
 欢迎提交Issue和Pull Request来帮助改进这个插件！
-
-1. Fork本仓库
-2. 创建你的特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交你的更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 打开一个Pull Request
-
 ## 📞 作者信息
 
 - **作者**：浅月tniay
@@ -133,6 +126,11 @@ astrbot_plugin_web-screenshot/
 - 优化消息发送方式
 - 更新API调用逻辑
 - 美化代码结构和文档
+
+### v1.3.1
+- 添加链接校验
+- 优化临时文件处理
+- 添加重试机制
 
 ## 🎯 鸣谢
 
