@@ -1,5 +1,5 @@
 # API网页截图插件
-
+![:name](https://count.getloli.com/@:tniay-web-screenshot)
 ![GitHub release](https://img.shields.io/github/v/release/tniany/astrbot_plugin_web-screenshot)
 ![GitHub stars](https://img.shields.io/github/stars/tniany/astrbot_plugin_web-screenshot)
 ![GitHub forks](https://img.shields.io/github/forks/tniany/astrbot_plugin_web-screenshot)
