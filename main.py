@@ -8,12 +8,13 @@ from astrbot.api.event import AstrMessageEvent
 from astrbot.api.event import filter
 from astrbot.api.star import Star, register
 from astrbot.api import logger
+from astrbot.api import AstrBotConfig
 
 @register(
     "astrbot_plugin_web-screenshot",
     "浅月tniay",
     "基于外部API提供网页截图功能的AstrBot插件，适用于OneBot QQ机器人",
-    "v1.3.1"
+    "v1.3.2"
 )
 class WebScreenshotPlugin(Star):
     """API网页截图插件
@@ -28,14 +29,22 @@ class WebScreenshotPlugin(Star):
     RETRY_COUNT = 2  # 网络请求重试次数
     RETRY_DELAY = 1  # 重试延迟（秒）
     
-    def __init__(self, context):
+    def __init__(self, context, config: AstrBotConfig):
         """初始化插件
         
         Args:
             context: AstrBot上下文对象
+            config: 插件配置
         """
         super().__init__(context)
         self.api_url = "https://screenshotsnap.com/api/screenshot"
+        self.config = config
+        self.pure_mode = config.get("pure_mode", False)
+        command_alias = config.get("command_alias", "")
+        if command_alias:
+            self.command_alias = [command_alias]
+        else:
+            self.command_alias = []
     
     @filter.command("截图", aliases=["网页截图", "截图网页"])
     async def handle_screenshot(self, event: AstrMessageEvent) -> AsyncGenerator[Any, None]:
@@ -47,13 +56,20 @@ class WebScreenshotPlugin(Star):
         width：视窗宽度，范围100-3840（默认1920）
         height：视窗高度，范围100-2160（默认1080）
         """
-        # 解析命令和参数
-        args = self._parse_command(event.get_message_str().strip())
+        raw_message = event.get_message_str().strip()
+        
+        if self.command_alias and any(raw_message.startswith(f"/{alias}") for alias in self.command_alias):
+            for alias in self.command_alias:
+                if raw_message.startswith(f"/{alias}"):
+                    args = raw_message[len(f"/{alias}"):].strip()
+                    break
+        else:
+            args = self._parse_command(raw_message)
+        
         if not args:
             yield event.plain_result("请提供要截图的网站URL")
             return
         
-        # 解析参数
         params, errors = self._parse_params(args)
         if errors:
             for error in errors:
@@ -66,10 +82,9 @@ class WebScreenshotPlugin(Star):
             return
         
         try:
-            # 发送请求获取截图
-            yield event.plain_result("正在获取网页截图，请稍候...")
+            if not self.pure_mode:
+                yield event.plain_result("正在获取网页截图，请稍候...")
             
-            # 获取截图响应
             response = await self._fetch_screenshot(params)
             
             # 处理截图响应
@@ -241,17 +256,17 @@ class WebScreenshotPlugin(Star):
         """
         try:
             logger.debug(f"开始发送截图: {temp_file}")
-            # 发送图片
             image_message = event.image_result(temp_file)
             yield image_message
             
-            success_message = (
-                f"网页截图成功！\n" 
-                f"URL: {params['url']}\n" 
-                f"格式: {params['format']}\n" 
-                f"尺寸: {params['width']}x{params['height']}\n" 
-            )
-            yield event.plain_result(success_message)
+            if not self.pure_mode:
+                success_message = (
+                    f"网页截图成功！\n" 
+                    f"URL: {params['url']}\n" 
+                    f"格式: {params['format']}\n" 
+                    f"尺寸: {params['width']}x{params['height']}\n"
+                )
+                yield event.plain_result(success_message)
             logger.info(f"截图发送成功: {params['url']}")
         except Exception as e:
             logger.error(f"发送图片失败: {str(e)}")

@@ -1,5 +1,5 @@
 # API网页截图插件
-![:name](https://count.getloli.com/@:tniay-web-screenshot)
+
 ![GitHub release](https://img.shields.io/github/v/release/tniany/astrbot_plugin_web-screenshot)
 ![GitHub stars](https://img.shields.io/github/stars/tniany/astrbot_plugin_web-screenshot)
 ![GitHub forks](https://img.shields.io/github/forks/tniany/astrbot_plugin_web-screenshot)
@@ -113,6 +113,13 @@ astrbot_plugin_web-screenshot/
 ## 🤝 贡献
 
 欢迎提交Issue和Pull Request来帮助改进这个插件！
+
+1. Fork本仓库
+2. 创建你的特性分支 (`git checkout -b feature/amazing-feature`)
+3. 提交你的更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 打开一个Pull Request
+
 ## 📞 作者信息
 
 - **作者**：浅月tniay
@@ -121,16 +128,18 @@ astrbot_plugin_web-screenshot/
 
 ## 📖 更新日志
 
+### v1.3.2
+- 新增 _conf_schema.json 配置文件，支持自定义指令别名和纯净模式
+- 支持插件数据持久化
+
+### v1.3.1
+- 修复 name 字段为合法 Python 标识符
+
 ### v1.2.2.1
 - 修复插件导入失败问题
 - 优化消息发送方式
 - 更新API调用逻辑
 - 美化代码结构和文档
-
-### v1.3.1
-- 添加链接校验
-- 优化临时文件处理
-- 添加重试机制
 
 ## 🎯 鸣谢
 
