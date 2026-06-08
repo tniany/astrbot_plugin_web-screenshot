@@ -127,7 +127,9 @@ astrbot_plugin_web-screenshot/
 - **反馈**：如有问题或建议，请在GitHub仓库提交Issue
 
 ## 📖 更新日志
-
+###
+v1.3.3
+- httpx==0.27.0改为httpx>=0.27.0
 ### v1.3.2
 - 新增 _conf_schema.json 配置文件，支持自定义指令别名和纯净模式
 - 支持插件数据持久化
